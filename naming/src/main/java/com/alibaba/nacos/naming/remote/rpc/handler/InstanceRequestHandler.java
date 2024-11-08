@@ -39,6 +39,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Instance request handler.
+ * 实例请求处理器
  *
  * @author xiweng.yy
  */
@@ -56,12 +57,17 @@ public class InstanceRequestHandler extends RequestHandler<InstanceRequest, Inst
     @Secured(action = ActionTypes.WRITE)
     @ExtractorManager.Extractor(rpcExtractor = InstanceRequestParamExtractor.class)
     public InstanceResponse handle(InstanceRequest request, RequestMeta meta) throws NacosException {
+        // request 就是客户端封装的实例信息，包括服务名、端口等
+        // 转换为 Service 对象
         Service service = Service.newService(request.getNamespace(), request.getGroupName(), request.getServiceName(),
                 true);
+        // 如果实例id和服务名称为空，设置一下
         InstanceUtil.setInstanceIdIfEmpty(request.getInstance(), service.getGroupedServiceName());
         switch (request.getType()) {
+            // 注册实例
             case NamingRemoteConstants.REGISTER_INSTANCE:
                 return registerInstance(service, request, meta);
+                // 注销实例
             case NamingRemoteConstants.DE_REGISTER_INSTANCE:
                 return deregisterInstance(service, request, meta);
             default:

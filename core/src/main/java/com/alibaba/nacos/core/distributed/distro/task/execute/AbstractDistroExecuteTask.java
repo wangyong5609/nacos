@@ -53,6 +53,7 @@ public abstract class AbstractDistroExecuteTask extends AbstractExecuteTask {
     
     @Override
     public void run() {
+        // Nacos:Naming:v2:ClientData
         String type = getDistroKey().getResourceType();
         DistroTransportAgent transportAgent = distroComponentHolder.findTransportAgent(type);
         if (null == transportAgent) {

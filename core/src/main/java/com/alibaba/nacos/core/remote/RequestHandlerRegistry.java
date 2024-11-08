@@ -40,7 +40,9 @@ import java.util.Set;
  * @author liuzunfei
  * @version $Id: RequestHandlerRegistry.java, v 0.1 2020年07月13日 8:24 PM liuzunfei Exp $
  */
-
+// 这个类实现了ApplicationListener接口，并且指定了它监听的事件类型为ContextRefreshedEvent。
+// ApplicationListener是Spring框架中的一个接口，用于定义一个事件监听器，它可以监听Spring应用上下文中发生的事件。
+// ContextRefreshedEvent是Spring框架中的一个事件，表示Spring应用上下文已经初始化完成并且已经刷新，即所有的Bean都已经创建和配置完成
 @Service
 public class RequestHandlerRegistry implements ApplicationListener<ContextRefreshedEvent> {
     
@@ -74,6 +76,7 @@ public class RequestHandlerRegistry implements ApplicationListener<ContextRefres
     
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
+        // 获取RequestHandler的所有实现类
         Map<String, RequestHandler> beansOfType = event.getApplicationContext().getBeansOfType(RequestHandler.class);
         Collection<RequestHandler> values = beansOfType.values();
         for (RequestHandler requestHandler : values) {
@@ -93,6 +96,7 @@ public class RequestHandlerRegistry implements ApplicationListener<ContextRefres
             //register tps control.
             try {
                 Method method = clazz.getMethod("handle", Request.class, RequestMeta.class);
+                // handle方法上有TpsControl注解，且开启了tps控制
                 if (method.isAnnotationPresent(TpsControl.class) && TpsControlConfig.isTpsControlEnabled()) {
                     TpsControl tpsControl = method.getAnnotation(TpsControl.class);
                     String pointName = tpsControl.pointName();
@@ -108,6 +112,7 @@ public class RequestHandlerRegistry implements ApplicationListener<ContextRefres
             try {
                 if (clazz.isAnnotationPresent(InvokeSource.class)) {
                     InvokeSource tpsControl = clazz.getAnnotation(InvokeSource.class);
+                    // 类的调用来源
                     String[] sources = tpsControl.source();
                     if (sources != null && sources.length > 0) {
                         sourceRegistry.put(tClass.getSimpleName(), Sets.newHashSet(sources));

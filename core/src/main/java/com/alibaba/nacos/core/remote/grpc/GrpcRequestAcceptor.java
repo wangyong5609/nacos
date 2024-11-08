@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * rpc request acceptor of grpc.
+ * 接收rpc请求
  *
  * @author liuzunfei
  * @version $Id: GrpcCommonRequestAcceptor.java, v 0.1 2020年09月01日 10:52 AM liuzunfei Exp $
@@ -55,6 +56,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class GrpcRequestAcceptor extends RequestGrpc.RequestImplBase {
     
+    // 注入RequestHandlerRegistry, 用于获取RequestHandler
     @Autowired
     RequestHandlerRegistry requestHandlerRegistry;
     
@@ -81,6 +83,7 @@ public class GrpcRequestAcceptor extends RequestGrpc.RequestImplBase {
     public void request(Payload grpcRequest, StreamObserver<Payload> responseObserver) {
         
         traceIfNecessary(grpcRequest, true);
+        // 请求类型，比如"InstanceRequest"
         String type = grpcRequest.getMetadata().getType();
         long startTime = System.nanoTime();
         

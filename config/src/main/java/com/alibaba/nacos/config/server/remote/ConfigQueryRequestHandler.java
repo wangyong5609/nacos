@@ -47,6 +47,8 @@ import static com.alibaba.nacos.config.server.utils.RequestUtil.CLIENT_APPNAME_H
 
 /**
  * ConfigQueryRequestHandler.
+ * 配置查询请求处理器
+ * 主要用来处理客户端的配置查询请求
  *
  * @author liuzunfei
  * @version $Id: ConfigQueryRequestHandler.java, v 0.1 2020年07月14日 9:54 AM liuzunfei Exp $

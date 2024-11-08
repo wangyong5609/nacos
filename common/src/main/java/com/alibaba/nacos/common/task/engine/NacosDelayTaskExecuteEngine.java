@@ -53,8 +53,10 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
     
     public NacosDelayTaskExecuteEngine(String name, int initCapacity, Logger logger, long processInterval) {
         super(logger);
+        // initCapacity = 32 
         tasks = new ConcurrentHashMap<>(initCapacity);
         processingExecutor = ExecutorFactory.newSingleScheduledExecutorService(new NameThreadFactory(name));
+        // 单线程的执行器 processInterval =  100L 每100毫秒执行一次
         processingExecutor
                 .scheduleWithFixedDelay(new ProcessRunnable(), processInterval, processInterval, TimeUnit.MILLISECONDS);
     }

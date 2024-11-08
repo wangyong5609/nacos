@@ -33,11 +33,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Combined trace events subscriber.
+ * 组合跟踪事件订阅者
  *
  * @author xiweng.yy
  */
 public class NacosCombinedTraceSubscriber extends SmartSubscriber {
     
+    // 存储订阅关系：记录每个 TraceEvent 子类对应的 NacosTraceSubscriber。
+    //事件分发：在事件发生时，根据事件类型找到对应的订阅者，并通知他们处理事件
     private final Map<Class<? extends TraceEvent>, Set<NacosTraceSubscriber>> interestedEvents;
     
     public NacosCombinedTraceSubscriber(Class<? extends TraceEvent> combinedEvent) {

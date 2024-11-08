@@ -30,7 +30,7 @@ import java.util.concurrent.Executor;
 public abstract class Subscriber<T extends Event> {
     
     /**
-     * Event callback.
+     * 事件回调
      *
      * @param event {@link Event}
      */
@@ -38,6 +38,7 @@ public abstract class Subscriber<T extends Event> {
     
     /**
      * Type of this subscriber's subscription.
+     * 订阅者订阅的事件类型
      *
      * @return Class which extends {@link Event}
      */
@@ -54,6 +55,7 @@ public abstract class Subscriber<T extends Event> {
     
     /**
      * Whether to ignore expired events.
+     * 是否忽略过期事件
      *
      * @return default value is {@link Boolean#FALSE}
      */
