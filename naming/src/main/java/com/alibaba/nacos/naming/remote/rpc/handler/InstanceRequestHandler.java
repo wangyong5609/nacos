@@ -45,7 +45,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class InstanceRequestHandler extends RequestHandler<InstanceRequest, InstanceResponse> {
-    
+
+    // 临时客户端操作服务
     private final EphemeralClientOperationServiceImpl clientOperationService;
     
     public InstanceRequestHandler(EphemeralClientOperationServiceImpl clientOperationService) {
@@ -61,7 +62,7 @@ public class InstanceRequestHandler extends RequestHandler<InstanceRequest, Inst
         // 转换为 Service 对象
         Service service = Service.newService(request.getNamespace(), request.getGroupName(), request.getServiceName(),
                 true);
-        // 如果实例id和服务名称为空，设置一下
+        // 如果实例id和服务名称为空，重新赋值
         InstanceUtil.setInstanceIdIfEmpty(request.getInstance(), service.getGroupedServiceName());
         switch (request.getType()) {
             // 注册实例
@@ -78,7 +79,9 @@ public class InstanceRequestHandler extends RequestHandler<InstanceRequest, Inst
     
     private InstanceResponse registerInstance(Service service, InstanceRequest request, RequestMeta meta)
             throws NacosException {
+        // 注册临时实例
         clientOperationService.registerInstance(service, request.getInstance(), meta.getConnectionId());
+        // 发布注册实例追踪事件
         NotifyCenter.publishEvent(new RegisterInstanceTraceEvent(System.currentTimeMillis(),
                 NamingRequestUtil.getSourceIpForGrpcRequest(meta), true, service.getNamespace(), service.getGroup(),
                 service.getName(), request.getInstance().getIp(), request.getInstance().getPort()));

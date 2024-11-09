@@ -106,6 +106,7 @@ public class NamingSubscriberServiceV2Impl extends SmartSubscriber implements Na
     @Override
     public List<Class<? extends Event>> subscribeTypes() {
         List<Class<? extends Event>> result = new LinkedList<>();
+        // 订阅服务变更事件
         result.add(ServiceEvent.ServiceChangedEvent.class);
         result.add(ServiceEvent.ServiceSubscribedEvent.class);
         return result;
@@ -117,10 +118,14 @@ public class NamingSubscriberServiceV2Impl extends SmartSubscriber implements Na
             // If service changed, push to all subscribers.
             ServiceEvent.ServiceChangedEvent serviceChangedEvent = (ServiceEvent.ServiceChangedEvent) event;
             Service service = serviceChangedEvent.getService();
+            // 添加服务推送延迟任务，将最新的服务实例列表推送给所有订阅了该服务的客户端
             delayTaskEngine.addTask(service, new PushDelayTask(service, PushConfig.getInstance().getPushTaskDelay()));
+            // 增加服务变更计数
             MetricsMonitor.incrementServiceChangeCount(service);
         } else if (event instanceof ServiceEvent.ServiceSubscribedEvent) {
             // If service is subscribed by one client, only push this client.
+            // 当 ServiceSubscribedEvent 事件发生时，意味着有新的客户端订阅了某个服务，
+            // NamingSubscriberServiceV2Impl 同样会创建一个 PushDelayTask，但这次会指定推送的目标客户端ID，确保只有订阅该服务的客户端会收到推送
             ServiceEvent.ServiceSubscribedEvent subscribedEvent = (ServiceEvent.ServiceSubscribedEvent) event;
             Service service = subscribedEvent.getService();
             delayTaskEngine.addTask(service, new PushDelayTask(service, PushConfig.getInstance().getPushTaskDelay(),

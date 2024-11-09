@@ -30,7 +30,7 @@ import java.util.concurrent.Executor;
 public abstract class Subscriber<T extends Event> {
     
     /**
-     * 事件回调
+     * 事件回调.
      *
      * @param event {@link Event}
      */

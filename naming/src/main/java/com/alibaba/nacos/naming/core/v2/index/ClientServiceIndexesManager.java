@@ -44,7 +44,8 @@ import java.util.concurrent.ConcurrentMap;
  */
 @Component
 public class ClientServiceIndexesManager extends SmartSubscriber {
-    
+
+    // 用于维护服务（Service）与发布者客户端ID（clientId）列表之间的映射关系
     private final ConcurrentMap<Service, Set<String>> publisherIndexes = new ConcurrentHashMap<>();
     
     private final ConcurrentMap<Service, Set<String>> subscriberIndexes = new ConcurrentHashMap<>();
@@ -79,6 +80,7 @@ public class ClientServiceIndexesManager extends SmartSubscriber {
     @Override
     public List<Class<? extends Event>> subscribeTypes() {
         List<Class<? extends Event>> result = new LinkedList<>();
+        // 订阅客户端注册服务事件
         result.add(ClientOperationEvent.ClientRegisterServiceEvent.class);
         result.add(ClientOperationEvent.ClientDeregisterServiceEvent.class);
         result.add(ClientOperationEvent.ClientSubscribeServiceEvent.class);
@@ -128,7 +130,9 @@ public class ClientServiceIndexesManager extends SmartSubscriber {
     }
     
     private void addPublisherIndexes(Service service, String clientId) {
+        // 保存服务与发布者客户端ID的映射关系，比如A服务部署了3台，那么保存的就是A服务与3台客户端的映射关系
         publisherIndexes.computeIfAbsent(service, key -> new ConcurrentHashSet<>()).add(clientId);
+        // 发布服务数据变更事件
         NotifyCenter.publishEvent(new ServiceEvent.ServiceChangedEvent(service, true));
     }
     
