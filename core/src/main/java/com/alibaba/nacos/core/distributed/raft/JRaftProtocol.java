@@ -104,7 +104,7 @@ public class JRaftProtocol extends AbstractConsistencyProtocol<RaftConfig, Reque
     private JRaftServer raftServer;
     
     private JRaftMaintainService jRaftMaintainService;
-    
+
     private ServerMemberManager memberManager;
     
     public JRaftProtocol(ServerMemberManager memberManager) throws Exception {
@@ -118,11 +118,14 @@ public class JRaftProtocol extends AbstractConsistencyProtocol<RaftConfig, Reque
         if (initialized.compareAndSet(false, true)) {
             this.raftConfig = config;
             NotifyCenter.registerToSharePublisher(RaftEvent.class);
+            // 初始化JRaftServer
             this.raftServer.init(this.raftConfig);
+            // 启动JRaftServer
             this.raftServer.start();
-            
+
             // There is only one consumer to ensure that the internal consumption
             // is sequential and there is no concurrent competition
+            // 注册一个事件监听器，用于监听和处理RaftEvent事件。当事件发生时，会更新协议元数据，并将其注入到节点的元数据中
             NotifyCenter.registerSubscriber(new Subscriber<RaftEvent>() {
                 @Override
                 public void onEvent(RaftEvent event) {
@@ -134,26 +137,26 @@ public class JRaftProtocol extends AbstractConsistencyProtocol<RaftConfig, Reque
                     final Long term = event.getTerm();
                     final List<String> raftClusterInfo = event.getRaftClusterInfo();
                     final String errMsg = event.getErrMsg();
-                    
+
                     // Leader information needs to be selectively updated. If it is valid data,
                     // the information in the protocol metadata is updated.
                     MapUtil.putIfValNoEmpty(properties, MetadataKey.LEADER_META_DATA, leader);
                     MapUtil.putIfValNoNull(properties, MetadataKey.TERM_META_DATA, term);
                     MapUtil.putIfValNoEmpty(properties, MetadataKey.RAFT_GROUP_MEMBER, raftClusterInfo);
                     MapUtil.putIfValNoEmpty(properties, MetadataKey.ERR_MSG, errMsg);
-                    
+
                     value.put(groupId, properties);
                     metaData.load(value);
-                    
+
                     // The metadata information is injected into the metadata information of the node
                     injectProtocolMetaData(metaData);
                 }
-                
+
                 @Override
                 public Class<? extends Event> subscribeType() {
                     return RaftEvent.class;
                 }
-                
+
             });
         }
     }

@@ -117,7 +117,6 @@ class NacosStateMachine extends StateMachineAdapter {
                     }
                     
                     LoggerUtils.printIfDebugEnabled(Loggers.RAFT, "receive log : {}", message);
-                    
                     if (message instanceof WriteRequest) {
                         Response response = processor.onApply((WriteRequest) message);
                         postProcessor(response, closure);

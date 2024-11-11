@@ -137,11 +137,17 @@ public class ProtocolManager extends MemberChangeListener implements DisposableB
     }
     
     private void initCPProtocol() {
+        // 如果获取到 CPProtocol Bean，则调用传入的消费者函数
         ApplicationUtils.getBeanIfExist(CPProtocol.class, protocol -> {
+            // 使用 ClassUtils.resolveGenericType 方法解析 protocol 的配置类型：RaftConfig
             Class configType = ClassUtils.resolveGenericType(protocol.getClass());
+            // 获取配置实例
             Config config = (Config) ApplicationUtils.getBean(configType);
+            // 将成员信息注入到配置中
             injectMembers4CP(config);
+            // 使用配置实例初始化协议
             protocol.init(config);
+            // 初始化后的CPProtocol实例赋值给cpProtocol字段
             ProtocolManager.this.cpProtocol = protocol;
         });
     }

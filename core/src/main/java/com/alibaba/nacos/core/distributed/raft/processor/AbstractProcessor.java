@@ -48,6 +48,7 @@ public abstract class AbstractProcessor {
                         .setErrMsg("Could not find the corresponding Raft Group : " + group).build());
                 return;
             }
+            // 只有领导者节点可以处理请求
             if (tuple.getNode().isLeader()) {
                 execute(server, rpcCtx, message, tuple);
             } else {

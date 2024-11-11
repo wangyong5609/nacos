@@ -195,6 +195,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP im
             final InstanceStoreRequest instanceRequest = serializer.deserialize(request.getData().toByteArray());
             final DataOperation operation = DataOperation.valueOf(request.getOperation());
             switch (operation) {
+                // 注册实例
                 case ADD:
                     onInstanceRegister(instanceRequest.service, instanceRequest.instance,
                             instanceRequest.getClientId());
@@ -236,6 +237,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP im
         InstancePublishInfo instancePublishInfo = getPublishInfo(instance);
         client.addServiceInstance(singleton, instancePublishInfo);
         client.setLastUpdatedTime();
+        // 发布客户端注册服务事件
         NotifyCenter.publishEvent(new ClientOperationEvent.ClientRegisterServiceEvent(singleton, clientId));
     }
     

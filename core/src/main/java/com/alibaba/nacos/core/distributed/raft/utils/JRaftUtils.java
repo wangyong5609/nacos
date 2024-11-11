@@ -77,7 +77,7 @@ public class JRaftUtils {
         final RpcServer rpcServer = raftRpcFactory.createRpcServer(peerId.getEndpoint());
         RaftRpcServerFactory.addRaftRequestProcessors(rpcServer, RaftExecutor.getRaftCoreExecutor(),
                 RaftExecutor.getRaftCliServiceExecutor());
-        
+        // 注册 Nacos 请求处理器
         rpcServer.registerProcessor(new NacosWriteRequestProcessor(server, SerializeFactory.getDefault()));
         rpcServer.registerProcessor(new NacosReadRequestProcessor(server, SerializeFactory.getDefault()));
         
