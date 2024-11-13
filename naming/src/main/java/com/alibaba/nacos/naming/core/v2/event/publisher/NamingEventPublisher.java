@@ -33,6 +33,7 @@ import java.util.concurrent.Executor;
 
 /**
  * Event publisher for naming event.
+ * 服务注册事件发布者
  *
  * @author xiweng.yy
  */
@@ -42,6 +43,7 @@ public class NamingEventPublisher extends Thread implements ShardedEventPublishe
     
     private static final int DEFAULT_WAIT_TIME = 60;
     
+    // 订阅者 一对多关系，一个事件可以有多个订阅者
     private final Map<Class<? extends Event>, Set<Subscriber<? extends Event>>> subscribes = new ConcurrentHashMap<>();
     
     private volatile boolean initialized = false;
@@ -76,6 +78,7 @@ public class NamingEventPublisher extends Thread implements ShardedEventPublishe
     }
     
     @Override
+    // 添加订阅者
     public void addSubscriber(Subscriber subscriber, Class<? extends Event> subscribeType) {
         subscribes.computeIfAbsent(subscribeType, inputType -> new ConcurrentHashSet<>()).add(subscriber);
     }
@@ -131,7 +134,9 @@ public class NamingEventPublisher extends Thread implements ShardedEventPublishe
     @Override
     public void run() {
         try {
+            // 为了避免消息丢失，当等待第一个订阅者注册时，启用 EventHandler
             waitSubscriberForInit();
+            // 处理事件
             handleEvents();
         } catch (Exception e) {
             Loggers.EVT_LOG.error("Naming Event Publisher {}, stop to handle event due to unexpected exception: ",
@@ -173,6 +178,7 @@ public class NamingEventPublisher extends Thread implements ShardedEventPublishe
             return;
         }
         for (Subscriber subscriber : subscribers) {
+            // 通知订阅者
             notifySubscriber(subscriber, event);
         }
     }

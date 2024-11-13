@@ -38,6 +38,7 @@ import static com.alibaba.nacos.api.exception.NacosException.SERVER_ERROR;
 
 /**
  * Unified Event Notify Center.
+ * 中心化的通知中心
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  * @author zongtanghu
@@ -174,6 +175,7 @@ public class NotifyCenter {
         if (consumer instanceof SmartSubscriber) {
             for (Class<? extends Event> subscribeType : ((SmartSubscriber) consumer).subscribeTypes()) {
                 // For case, producer: defaultSharePublisher -> consumer: smartSubscriber.
+                // 是否为SlowEvent的子类
                 if (ClassUtils.isAssignableFrom(SlowEvent.class, subscribeType)) {
                     INSTANCE.sharePublisher.addSubscriber(consumer, subscribeType);
                 } else {
@@ -194,7 +196,7 @@ public class NotifyCenter {
     }
     
     /**
-     * Add a subscriber to publisher.
+     * 将订阅者添加到发布者。
      *
      * @param consumer      subscriber instance.
      * @param subscribeType subscribeType.
@@ -202,7 +204,7 @@ public class NotifyCenter {
      */
     private static void addSubscriber(final Subscriber consumer, Class<? extends Event> subscribeType,
             EventPublisherFactory factory) {
-        
+        // 类的规范名称，比如：com.alibaba.nacos.naming.core.v2.event.client.ClientOperationEvent.ClientRegisterServiceEvent
         final String topic = ClassUtils.getCanonicalName(subscribeType);
         synchronized (NotifyCenter.class) {
             // MapUtils.computeIfAbsent is a unsafe method.

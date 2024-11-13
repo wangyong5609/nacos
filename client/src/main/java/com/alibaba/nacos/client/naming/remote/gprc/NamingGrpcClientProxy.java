@@ -115,6 +115,7 @@ public class NamingGrpcClientProxy extends AbstractNamingClientProxy {
         rpcClient.registerConnectionListener(redoService);
         rpcClient.registerServerRequestHandler(new NamingPushRequestHandler(serviceInfoHolder));
         rpcClient.start();
+        // 向通知中心注册自己为订阅者
         NotifyCenter.registerSubscriber(this);
     }
     
