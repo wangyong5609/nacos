@@ -141,6 +141,7 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
             NacosTaskProcessor processor = getProcessor(taskKey);
             try {
                 // ReAdd task if process failed
+                // 执行任务，任务处理失败时重新添加任务
                 if (!processor.process(task)) {
                     retryFailedTask(taskKey, task);
                 }
@@ -161,6 +162,7 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
         @Override
         public void run() {
             try {
+                // 处理实例注册任务
                 processTasks();
             } catch (Throwable e) {
                 getEngineLog().error(e.toString(), e);

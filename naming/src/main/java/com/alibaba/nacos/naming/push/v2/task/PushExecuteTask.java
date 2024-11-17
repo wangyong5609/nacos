@@ -56,8 +56,11 @@ public class PushExecuteTask extends AbstractExecuteTask {
     @Override
     public void run() {
         try {
+            // 生成推送数据的包装器PushDataWrapper
             PushDataWrapper wrapper = generatePushData();
+            // ClientManager实例
             ClientManager clientManager = delayTaskEngine.getClientManager();
+            // 获取要推送的客户端ID列表
             for (String each : getTargetClientIds()) {
                 Client client = clientManager.getClient(each);
                 if (null == client) {
@@ -69,6 +72,7 @@ public class PushExecuteTask extends AbstractExecuteTask {
                 if (subscriber == null) {
                     continue;
                 }
+                // 向客户端推送数据，并注册回调
                 delayTaskEngine.getPushExecutor().doPushWithCallback(each, subscriber, wrapper,
                         new ServicePushCallback(each, subscriber, wrapper.getOriginalData(), delayTask.isPushToAll()));
             }

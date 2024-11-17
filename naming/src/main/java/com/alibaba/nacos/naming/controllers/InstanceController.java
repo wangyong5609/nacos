@@ -82,6 +82,7 @@ import static com.alibaba.nacos.naming.misc.UtilsAndCommons.DEFAULT_CLUSTER_NAME
  * @author nkorange
  */
 @RestController
+// 注册实例path：/nacos/v1/ns/instance
 @RequestMapping(UtilsAndCommons.NACOS_NAMING_CONTEXT + UtilsAndCommons.NACOS_NAMING_INSTANCE_CONTEXT)
 @ExtractorManager.Extractor(httpExtractor = NamingDefaultHttpParamExtractor.class)
 public class InstanceController {
@@ -111,16 +112,19 @@ public class InstanceController {
     @TpsControl(pointName = "NamingInstanceRegister", name = "HttpNamingInstanceRegister")
     @Secured(action = ActionTypes.WRITE)
     public String register(HttpServletRequest request) throws Exception {
-        
+        // 命名空间，如:public
         final String namespaceId = WebUtils.optional(request, CommonParams.NAMESPACE_ID,
                 Constants.DEFAULT_NAMESPACE_ID);
+        // 服务名，如:DEFAULT_GROUP@@service-provider
         final String serviceName = WebUtils.required(request, CommonParams.SERVICE_NAME);
+        // 检查服务名格式，应该是这样的格式：groupName@@serviceName
         NamingUtils.checkServiceNameFormat(serviceName);
-        
+        // 实例信息，包括ip、port、clusterName、weight、metadata等
         final Instance instance = HttpRequestInstanceBuilder.newBuilder()
                 .setDefaultInstanceEphemeral(switchDomain.isDefaultInstanceEphemeral()).setRequest(request).build();
-        
+        // InstanceOperatorClientImpl实例，注册实例
         getInstanceOperator().registerInstance(namespaceId, serviceName, instance);
+        // 发布注册实例追踪事件
         NotifyCenter.publishEvent(new RegisterInstanceTraceEvent(System.currentTimeMillis(),
                 NamingRequestUtil.getSourceIpForHttpRequest(request), false, namespaceId,
                 NamingUtils.getGroupName(serviceName), NamingUtils.getServiceName(serviceName), instance.getIp(),
