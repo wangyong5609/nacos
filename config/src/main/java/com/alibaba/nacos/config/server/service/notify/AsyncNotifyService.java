@@ -79,10 +79,10 @@ public class AsyncNotifyService {
     public AsyncNotifyService(ServerMemberManager memberManager) {
         this.memberManager = memberManager;
         
-        // Register ConfigDataChangeEvent to NotifyCenter.
+        // 将 ConfigDataChangeEvent 注册到 NotifyCenter。
         NotifyCenter.registerToPublisher(ConfigDataChangeEvent.class, NotifyCenter.ringBufferSize);
         
-        // Register A Subscriber to subscribe ConfigDataChangeEvent.
+        // 注册一个订阅者来订阅ConfigDataChangeEvent。
         NotifyCenter.registerSubscriber(new Subscriber() {
             
             @Override
@@ -101,6 +101,7 @@ public class AsyncNotifyService {
     void handleConfigDataChangeEvent(Event event) {
         if (event instanceof ConfigDataChangeEvent) {
             ConfigDataChangeEvent evt = (ConfigDataChangeEvent) event;
+            // 数据库里的最后修改时间
             long dumpTs = evt.lastModifiedTs;
             String dataId = evt.dataId;
             String group = evt.group;
@@ -108,13 +109,14 @@ public class AsyncNotifyService {
             String tag = evt.tag;
             MetricsMonitor.incrementConfigChangeCount(tenant, group, dataId);
             
+            // 获取所有的集群成员(除了自己)
             Collection<Member> ipList = memberManager.allMembersWithoutSelf();
             
-            // In fact, any type of queue here can be
+            // 事实上，这里任何类型的队列都可以，只要它是线程安全的
             Queue<NotifySingleRpcTask> rpcQueue = new LinkedList<>();
             
             for (Member member : ipList) {
-                // grpc report data change only
+                // 仅仅是用 RPC 请求通知对方数据变化
                 rpcQueue.add(
                         new NotifySingleRpcTask(dataId, group, tenant, tag, dumpTs, evt.isBeta, evt.isBatch, member));
             }
@@ -130,6 +132,7 @@ public class AsyncNotifyService {
     
     void executeAsyncRpcTask(Queue<NotifySingleRpcTask> queue) {
         while (!queue.isEmpty()) {
+            // 从队列中取出任务
             NotifySingleRpcTask task = queue.poll();
             
             ConfigChangeClusterSyncRequest syncRequest = new ConfigChangeClusterSyncRequest();
@@ -140,27 +143,32 @@ public class AsyncNotifyService {
             syncRequest.setTag(task.getTag());
             syncRequest.setBatch(task.isBatch());
             syncRequest.setTenant(task.getTenant());
+            
+            // 集群成员
             Member member = task.member;
             
             String event = getNotifyEvent(task);
+            
+            // 实例在线才可以通知对方
             if (memberManager.hasMember(member.getAddress())) {
-                // start the health check and there are ips that are not monitored, put them directly in the notification queue, otherwise notify
+                // 启动健康检查，有未监控的ip，直接放入通知队列，否则notify
                 boolean unHealthNeedDelay = isUnHealthy(member.getAddress());
                 if (unHealthNeedDelay) {
-                    // target ip is unhealthy, then put it in the notification list
+                    // 目标ip不健康，则将其放入通知列表
                     ConfigTraceService.logNotifyEvent(task.getDataId(), task.getGroup(), task.getTenant(), null,
                             task.getLastModified(), InetUtils.getSelfIP(), event,
                             ConfigTraceService.NOTIFY_TYPE_UNHEALTH, 0, member.getAddress());
-                    // get delay time and set fail count to the task
+                    // 获取延迟时间并设置任务失败计数
                     asyncTaskExecute(task);
                 } else {
                     
-                    // grpc report data change only
+                    // 仅通知数据变更
                     try {
                         configClusterRpcClientProxy.syncConfigChange(member, syncRequest,
                                 new AsyncRpcNotifyCallBack(AsyncNotifyService.this, task));
                     } catch (Exception e) {
                         MetricsMonitor.getConfigNotifyException().increment();
+                        // 获取延迟时间并设置任务失败计数
                         asyncTaskExecute(task);
                     }
                     

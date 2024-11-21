@@ -82,7 +82,7 @@ public class RpcConfigChangeNotifier extends Subscriber<LocalDataChangeEvent> {
     private ConnectionManager connectionManager;
     
     /**
-     * adaptor to config module ,when server side config change ,invoke this method.
+     * 适配器到配置模块，当服务器端配置更改时，调用此方法。
      *
      * @param groupKey groupKey
      */
@@ -121,6 +121,7 @@ public class RpcConfigChangeNotifier extends Subscriber<LocalDataChangeEvent> {
     
     @Override
     public void onEvent(LocalDataChangeEvent event) {
+        // 服务端配置变更，通知客户端
         String groupKey = event.groupKey;
         boolean isBeta = event.isBeta;
         List<String> betaIps = event.betaIps;

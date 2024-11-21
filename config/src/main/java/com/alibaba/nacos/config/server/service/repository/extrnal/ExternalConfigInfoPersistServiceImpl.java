@@ -196,11 +196,14 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
     public ConfigOperateResult insertOrUpdateCas(String srcIp, String srcUser, ConfigInfo configInfo,
             Map<String, Object> configAdvanceInfo) {
         try {
+            // 从 config_info表查询配置信息
             ConfigInfoStateWrapper configInfoState = findConfigInfoState(configInfo.getDataId(), configInfo.getGroup(),
                     configInfo.getTenant());
             if (configInfoState == null) {
+                // 不存在则插入
                 return addConfigInfo(srcIp, srcUser, configInfo, configAdvanceInfo);
             } else {
+                // 存在则更新
                 return updateConfigInfoCas(configInfo, srcIp, srcUser, configAdvanceInfo);
             }
             
@@ -552,6 +555,7 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
             final String srcUser, final Map<String, Object> configAdvanceInfo) {
         return tjt.execute(status -> {
             try {
+                // 查询旧配置
                 ConfigInfo oldConfigInfo = findConfigInfo(configInfo.getDataId(), configInfo.getGroup(),
                         configInfo.getTenant());
                 if (oldConfigInfo == null) {
@@ -569,21 +573,23 @@ public class ExternalConfigInfoPersistServiceImpl implements ConfigInfoPersistSe
                 if (configInfo.getAppName() == null) {
                     configInfo.setAppName(appNameTmp);
                 }
+                // 更新配置信息
                 int rows = updateConfigInfoAtomicCas(configInfo, srcIp, srcUser, configAdvanceInfo);
                 if (rows < 1) {
                     return new ConfigOperateResult(false);
                 }
                 String configTags = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("config_tags");
                 if (configTags != null) {
-                    // delete all tags and then recreate
+                    // 删除所有标签，然后重新创建
                     removeTagByIdAtomic(oldConfigInfo.getId());
                     addConfigTagsRelation(oldConfigInfo.getId(), configTags, configInfo.getDataId(),
                             configInfo.getGroup(), configInfo.getTenant());
                 }
                 Timestamp now = new Timestamp(System.currentTimeMillis());
-                
+                // 插入历史配置
                 historyConfigInfoPersistService.insertConfigHistoryAtomic(oldConfigInfo.getId(), oldConfigInfo, srcIp,
                         srcUser, now, "U");
+                // 查询配置修改的状态
                 ConfigInfoStateWrapper configInfoLast = this.findConfigInfoState(configInfo.getDataId(),
                         configInfo.getGroup(), configInfo.getTenant());
                 if (configInfoLast == null) {

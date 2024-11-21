@@ -260,6 +260,7 @@ public abstract class DumpService {
             Timestamp currentTime = new Timestamp(System.currentTimeMillis());
             
             try {
+                // 
                 dumpAllConfigInfoOnStartup(dumpAllProcessor);
                 
                 // update Beta cache
@@ -352,6 +353,7 @@ public abstract class DumpService {
             dumpTag(dumpRequest.getDataId(), dumpRequest.getGroup(), dumpRequest.getTenant(), dumpRequest.getTag(),
                     dumpRequest.getLastModifiedTs(), dumpRequest.getSourceIp());
         } else {
+            // dump 正式数据
             dumpFormal(dumpRequest.getDataId(), dumpRequest.getGroup(), dumpRequest.getTenant(),
                     dumpRequest.getLastModifiedTs(), dumpRequest.getSourceIp());
         }

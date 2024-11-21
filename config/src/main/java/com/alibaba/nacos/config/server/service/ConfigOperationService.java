@@ -101,6 +101,7 @@ public class ConfigOperationService {
         if (StringUtils.isBlank(configRequestInfo.getBetaIps())) {
             if (StringUtils.isBlank(configForm.getTag())) {
                 if (StringUtils.isNotBlank(configRequestInfo.getCasMd5())) {
+                    // 添加或更新配置信息到数据库，返回 id和最后修改时间
                     configOperateResult = configInfoPersistService.insertOrUpdateCas(configRequestInfo.getSrcIp(),
                             configForm.getSrcUser(), configInfo, configAdvanceInfo);
                     if (!configOperateResult.isSuccess()) {
@@ -111,9 +112,11 @@ public class ConfigOperationService {
                                 ErrorCode.RESOURCE_CONFLICT, "Cas publish fail, server md5 may have changed.");
                     }
                 } else {
+                    // 添加或更新配置信息到数据库，返回 id和最后修改时间
                     configOperateResult = configInfoPersistService.insertOrUpdate(configRequestInfo.getSrcIp(),
                             configForm.getSrcUser(), configInfo, configAdvanceInfo);
                 }
+                // 发布配置数据变更事件，客户端能感知配置更新的根本原因
                 ConfigChangePublisher.notifyConfigChange(
                         new ConfigDataChangeEvent(false, configForm.getDataId(), configForm.getGroup(),
                                 configForm.getNamespaceId(), configOperateResult.getLastModified()));

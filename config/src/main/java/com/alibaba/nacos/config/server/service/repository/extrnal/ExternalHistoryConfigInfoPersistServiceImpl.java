@@ -91,12 +91,14 @@ public class ExternalHistoryConfigInfoPersistServiceImpl implements HistoryConfi
             final Timestamp time, String ops) {
         String appNameTmp = StringUtils.defaultEmptyIfBlank(configInfo.getAppName());
         String tenantTmp = StringUtils.defaultEmptyIfBlank(configInfo.getTenant());
+        // 配置内容生成 MD5
         final String md5Tmp = MD5Utils.md5Hex(configInfo.getContent(), Constants.ENCODE);
         String encryptedDataKey = StringUtils.defaultEmptyIfBlank(configInfo.getEncryptedDataKey());
         
         try {
             HistoryConfigInfoMapper historyConfigInfoMapper = mapperManager.findMapper(
                     dataSourceService.getDataSourceType(), TableConstant.HIS_CONFIG_INFO);
+            // 写入配置历史记录到his_config_info表
             jt.update(historyConfigInfoMapper.insert(
                             Arrays.asList("id", "data_id", "group_id", "tenant_id", "app_name", "content", "md5", "src_ip",
                                     "src_user", "gmt_modified", "op_type", "encrypted_data_key")), id, configInfo.getDataId(),

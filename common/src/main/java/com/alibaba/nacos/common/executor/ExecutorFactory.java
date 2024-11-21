@@ -145,7 +145,7 @@ public final class ExecutorFactory {
         }
         
         /**
-         * Create a new scheduled executor service with input thread factory and register to manager.
+         * 使用输入线程工厂创建一个新的调度执行器服务并注册到管理器。
          *
          * @param group         group name
          * @param nThreads      thread number

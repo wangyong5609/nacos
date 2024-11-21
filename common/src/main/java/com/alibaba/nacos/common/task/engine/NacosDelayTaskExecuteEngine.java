@@ -55,8 +55,9 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
         super(logger);
         // initCapacity = 32 
         tasks = new ConcurrentHashMap<>(initCapacity);
+        // 创建单线程的执行器,确保任务都能处理成功
         processingExecutor = ExecutorFactory.newSingleScheduledExecutorService(new NameThreadFactory(name));
-        // 单线程的执行器 processInterval =  100L 每100毫秒执行一次
+        // 单线程的执行器 processInterval =  100L，每次任务执行完成后，等待 100 毫秒再执行下一个任务
         processingExecutor
                 .scheduleWithFixedDelay(new ProcessRunnable(), processInterval, processInterval, TimeUnit.MILLISECONDS);
     }
@@ -138,6 +139,7 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
             if (null == task) {
                 continue;
             }
+            getEngineLog().info("Nacos task execute, taskKey: {}", taskKey);
             NacosTaskProcessor processor = getProcessor(taskKey);
             try {
                 // ReAdd task if process failed
@@ -163,6 +165,7 @@ public class NacosDelayTaskExecuteEngine extends AbstractNacosTaskExecuteEngine<
         public void run() {
             try {
                 // 处理实例注册任务
+                // 处理 dump 任务
                 processTasks();
             } catch (Throwable e) {
                 getEngineLog().error(e.toString(), e);

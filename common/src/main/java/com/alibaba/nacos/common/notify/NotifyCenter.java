@@ -340,7 +340,7 @@ public class NotifyCenter {
         if (ClassUtils.isAssignableFrom(SlowEvent.class, eventType)) {
             return INSTANCE.sharePublisher;
         }
-        
+        // 类路径地址，例如：com.alibaba.nacos.config.server.model.event.ConfigDataChangeEvent
         final String topic = ClassUtils.getCanonicalName(eventType);
         synchronized (NotifyCenter.class) {
             // MapUtils.computeIfAbsent is a unsafe method.
