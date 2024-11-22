@@ -92,7 +92,7 @@ public class ConfigCacheService {
         
         try {
             
-            //check timestamp
+            //check timestamp 已经更新过了，避免多次更新
             boolean lastModifiedOutDated = lastModifiedTs < ConfigCacheService.getLastModifiedTs(groupKey);
             if (lastModifiedOutDated) {
                 DUMP_LOG.warn("[dump-ignore] timestamp is outdated,groupKey={}", groupKey);
@@ -105,28 +105,31 @@ public class ConfigCacheService {
                 md5 = MD5Utils.md5Hex(content, PERSIST_ENCODE);
             }
             
-            //check md5 & update local disk cache.
+            //检查 md5 并更新本地磁盘缓存。
             String localContentMd5 = ConfigCacheService.getContentMd5(groupKey);
             boolean md5Changed = !md5.equals(localContentMd5);
             if (md5Changed) {
                 DUMP_LOG.info("[dump] md5 changed, save to disk cache ,groupKey={}, newMd5={},oldMd5={}", groupKey, md5,
                         localContentMd5);
+                // 保存到磁盘
                 ConfigDiskServiceFactory.getInstance().saveToDisk(dataId, group, tenant, content);
             } else {
                 DUMP_LOG.warn("[dump-ignore] ignore to save to disk cache. md5 consistent,groupKey={}, md5={}",
                         groupKey, md5);
             }
             
-            //check  md5 and timestamp & update local jvm cache.
+            //检查 md5 和时间戳并更新本地 jvm 缓存。
             if (md5Changed) {
                 DUMP_LOG.info(
                         "[dump] md5 changed, update md5 and timestamp in jvm cache ,groupKey={}, newMd5={},oldMd5={},lastModifiedTs={}",
                         groupKey, md5, localContentMd5, lastModifiedTs);
+                // 更新 cache 里面的 md5 和最后修改时间戳
                 updateMd5(groupKey, md5, lastModifiedTs, encryptedDataKey);
             } else if (newLastModified) {
                 DUMP_LOG.info(
                         "[dump] md5 consistent ,timestamp changed, update timestamp only in jvm cache ,groupKey={},lastModifiedTs={}",
                         groupKey, lastModifiedTs);
+                // 更新 cache 里面的最后修改时间戳
                 updateTimeStamp(groupKey, lastModifiedTs, encryptedDataKey);
             } else {
                 DUMP_LOG.warn(
