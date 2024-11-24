@@ -88,18 +88,20 @@ public class RpcConfigChangeNotifier extends Subscriber<LocalDataChangeEvent> {
      */
     public void configDataChanged(String groupKey, String dataId, String group, String tenant, boolean isBeta,
             List<String> betaIps, String tag) {
-        
+
+        // 获取配置的监听者列表
         Set<String> listeners = configChangeListenContext.getListeners(groupKey);
         if (CollectionUtils.isEmpty(listeners)) {
             return;
         }
         int notifyClientCount = 0;
         for (final String client : listeners) {
+            // 客户端连接
             Connection connection = connectionManager.getConnection(client);
             if (connection == null) {
                 continue;
             }
-            
+            // 客户端元信息
             ConnectionMeta metaInfo = connection.getMetaInfo();
             String clientIp = metaInfo.getClientIp();
             String clientTag = metaInfo.getTag();
@@ -108,11 +110,12 @@ public class RpcConfigChangeNotifier extends Subscriber<LocalDataChangeEvent> {
             if (StringUtils.isNotBlank(tag) && !tag.equals(clientTag)) {
                 continue;
             }
-            
+            // 重点：构建通知请求，客户端收到这个请求后，会重新获取配置
             ConfigChangeNotifyRequest notifyRequest = ConfigChangeNotifyRequest.build(dataId, group, tenant);
             
             RpcPushTask rpcPushRetryTask = new RpcPushTask(notifyRequest,
                     ConfigCommonConfig.getInstance().getMaxPushRetryTimes(), client, clientIp, metaInfo.getAppName());
+            // push任务
             push(rpcPushRetryTask, connectionManager);
             notifyClientCount++;
         }
@@ -197,9 +200,11 @@ public class RpcConfigChangeNotifier extends Subscriber<LocalDataChangeEvent> {
             TpsCheckRequest tpsCheckRequest = new TpsCheckRequest();
             
             tpsCheckRequest.setPointName(POINT_CONFIG_PUSH);
+            // 检查TPS
             if (!tpsControlManager.check(tpsCheckRequest).isSuccess()) {
                 push(this, connectionManager);
             } else {
+                // 推送请求并设置回调
                 rpcPushService.pushWithCallback(connectionId, notifyRequest,
                         new RpcPushCallback(this, tpsControlManager, connectionManager),
                         ConfigExecutor.getClientConfigNotifierServiceExecutor());
@@ -222,7 +227,7 @@ public class RpcConfigChangeNotifier extends Subscriber<LocalDataChangeEvent> {
             this.tpsControlManager = tpsControlManager;
             this.connectionManager = connectionManager;
         }
-        
+
         @Override
         public void onSuccess() {
             TpsCheckRequest tpsCheckRequest = new TpsCheckRequest();
@@ -245,6 +250,7 @@ public class RpcConfigChangeNotifier extends Subscriber<LocalDataChangeEvent> {
     private static void push(RpcPushTask retryTask, ConnectionManager connectionManager) {
         ConfigChangeNotifyRequest notifyRequest = retryTask.getNotifyRequest();
         if (retryTask.isOverTimes()) {
+            // 超过最大重试次数
             Loggers.REMOTE_PUSH.warn(
                     "push callback retry fail over times. dataId={},group={},tenant={},clientId={}, will unregister client.",
                     notifyRequest.getDataId(), notifyRequest.getGroup(), notifyRequest.getTenant(),
@@ -252,6 +258,7 @@ public class RpcConfigChangeNotifier extends Subscriber<LocalDataChangeEvent> {
             connectionManager.unregister(retryTask.getConnectionId());
         } else if (connectionManager.getConnection(retryTask.getConnectionId()) != null) {
             // first time:delay 0s; second time:delay 2s; third time:delay 4s
+            // 失败次数越多，重试间隔时间越长
             ConfigExecutor.scheduleClientConfigNotifier(retryTask, retryTask.getTryTimes() * 2, TimeUnit.SECONDS);
         } else {
             // client is already offline, ignore task.

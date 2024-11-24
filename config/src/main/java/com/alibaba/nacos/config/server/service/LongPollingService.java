@@ -270,21 +270,25 @@ public class LongPollingService {
         @Override
         public void run() {
             try {
+                // 所有的订阅者
                 for (Iterator<ClientLongPolling> iter = allSubs.iterator(); iter.hasNext(); ) {
                     ClientLongPolling clientSub = iter.next();
+                    // 该订阅者是否订阅了该配置
                     if (clientSub.clientMd5Map.containsKey(groupKey)) {
                         
                         // If published tag is not in the tag list, then it skipped.
                         if (StringUtils.isNotBlank(tag) && !tag.equals(clientSub.tag)) {
                             continue;
                         }
-                        
+                        // 更新保留IP的最后更新时间
                         getRetainIps().put(clientSub.ip, System.currentTimeMillis());
-                        iter.remove(); // Delete subscribers' relationships.
+                        // 移除客户端订阅关系
+                        iter.remove();
                         LogUtil.CLIENT_LOG.info("{}|{}|{}|{}|{}|{}|{}", (System.currentTimeMillis() - changeTime),
                                 "in-advance",
                                 RequestUtil.getRemoteIp((HttpServletRequest) clientSub.asyncContext.getRequest()),
                                 "polling", clientSub.clientMd5Map.size(), clientSub.probeRequestSize, groupKey);
+                        // 向客户端发送响应，包含更新的配置groupKey
                         clientSub.sendResponse(Collections.singletonList(groupKey));
                     }
                 }

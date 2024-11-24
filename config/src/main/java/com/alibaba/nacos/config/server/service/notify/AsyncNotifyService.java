@@ -134,7 +134,8 @@ public class AsyncNotifyService {
         while (!queue.isEmpty()) {
             // 从队列中取出任务
             NotifySingleRpcTask task = queue.poll();
-            
+
+            // 重点：构建集群同步请求，集群其他节点收到此类型请求，会进行数据同步
             ConfigChangeClusterSyncRequest syncRequest = new ConfigChangeClusterSyncRequest();
             syncRequest.setDataId(task.getDataId());
             syncRequest.setGroup(task.getGroup());
