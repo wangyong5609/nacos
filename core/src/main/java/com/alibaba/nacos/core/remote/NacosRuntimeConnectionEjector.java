@@ -47,9 +47,9 @@ public class NacosRuntimeConnectionEjector extends RuntimeConnectionEjector {
      * eject connections on runtime.
      */
     public void doEject() {
-        // remove out dated connection
+        // 删除过时的连接
         ejectOutdatedConnection();
-        // remove overload connection
+        // 删除过载连接
         ejectOverLimitConnection();
     }
     
@@ -58,37 +58,33 @@ public class NacosRuntimeConnectionEjector extends RuntimeConnectionEjector {
      */
     private void ejectOutdatedConnection() {
         try {
-            
-            Loggers.CONNECTION.info("Connection check task start");
-            
             Map<String, Connection> connections = connectionManager.connections;
-            int totalCount = connections.size();
-            int currentSdkClientCount = connectionManager.currentSdkClientCount();
-            
-            Loggers.CONNECTION.info("Long connection metrics detail ,Total count ={}, sdkCount={},clusterCount={}",
-                    totalCount, currentSdkClientCount, (totalCount - currentSdkClientCount));
-            
+            // 记录过时连接
             Set<String> outDatedConnections = new HashSet<>();
             long now = System.currentTimeMillis();
             //outdated connections collect.
             for (Map.Entry<String, Connection> entry : connections.entrySet()) {
                 Connection client = entry.getValue();
+              
                 if (now - client.getMetaInfo().getLastActiveTime() >= KEEP_ALIVE_TIME) {
+                    // 最近活跃时间超过20s
                     outDatedConnections.add(client.getMetaInfo().getConnectionId());
                 } else if (client.getMetaInfo().pushQueueBlockTimesLastOver(300 * 1000)) {
+                    // 如果连接的推送队列阻塞时间超过 300 秒，也将其标记为过时
                     outDatedConnections.add(client.getMetaInfo().getConnectionId());
                 }
             }
-            
-            // check out date connection
-            Loggers.CONNECTION.info("Out dated connection ,size={}", outDatedConnections.size());
+            // 检查过时连接集合
             if (CollectionUtils.isNotEmpty(outDatedConnections)) {
+                // 存储成功的连接
                 Set<String> successConnections = new HashSet<>();
+                // 使用 CountDownLatch 来等待所有连接检测完成
                 final CountDownLatch latch = new CountDownLatch(outDatedConnections.size());
                 for (String outDateConnectionId : outDatedConnections) {
                     try {
                         Connection connection = connectionManager.getConnection(outDateConnectionId);
                         if (connection != null) {
+                            // 发送客户端检测请求
                             ClientDetectionRequest clientDetectionRequest = new ClientDetectionRequest();
                             connection.asyncRequest(clientDetectionRequest, new RequestCallBack() {
                                 @Override
@@ -104,6 +100,7 @@ public class NacosRuntimeConnectionEjector extends RuntimeConnectionEjector {
                                 @Override
                                 public void onResponse(Response response) {
                                     latch.countDown();
+                                    // 如果检测成功，更新连接的最近活跃时间，并将其从过时连接集合中移除
                                     if (response != null && response.isSuccess()) {
                                         connection.freshActiveTime();
                                         successConnections.add(outDateConnectionId);
@@ -116,7 +113,6 @@ public class NacosRuntimeConnectionEjector extends RuntimeConnectionEjector {
                                 }
                             });
                             
-                            Loggers.CONNECTION.info("[{}]send connection active request ", outDateConnectionId);
                         } else {
                             latch.countDown();
                         }
@@ -124,46 +120,38 @@ public class NacosRuntimeConnectionEjector extends RuntimeConnectionEjector {
                     } catch (ConnectionAlreadyClosedException e) {
                         latch.countDown();
                     } catch (Exception e) {
-                        Loggers.CONNECTION.error("[{}]Error occurs when check client active detection ,error={}",
-                                outDateConnectionId, e);
                         latch.countDown();
                     }
                 }
-                
+                // 等待所有连接检测完成
                 latch.await(5000L, TimeUnit.MILLISECONDS);
-                Loggers.CONNECTION.info("Out dated connection check successCount={}", successConnections.size());
                 
                 for (String outDateConnectionId : outDatedConnections) {
+                    // 如果连接仍然检测失败，将其注销
                     if (!successConnections.contains(outDateConnectionId)) {
-                        Loggers.CONNECTION.info("[{}]Unregister Out dated connection....", outDateConnectionId);
                         connectionManager.unregister(outDateConnectionId);
                     }
                 }
             }
-            
-            Loggers.CONNECTION.info("Connection check task end");
-            
         } catch (Throwable e) {
             Loggers.CONNECTION.error("Error occurs during connection check... ", e);
         }
     }
     
     /**
-     * eject the over limit connection.
+     * 删除过载的连接
      */
     private void ejectOverLimitConnection() {
-        // if not count set, then give up
+        // 如果没有设置负载限制，则直接返回
         if (getLoadClient() > 0) {
             try {
-                Loggers.CONNECTION.info("Connection overLimit check task start, loadCount={}, redirectAddress={}",
-                        getLoadClient(), getRedirectAddress());
-                // check count
+                // 当前连接
                 int currentConnectionCount = connectionManager.getCurrentConnectionCount();
                 int ejectingCount = currentConnectionCount - getLoadClient();
                 // if overload
                 if (ejectingCount > 0) {
-                    // we may modify the connection map when connection reset
-                    // avoid concurrent modified exception, create new set for ids snapshot
+                    // 当连接重置时我们可以修改连接映射
+                    // 避免并发修改异常，为 ids 快照创建新集
                     Set<String> ids = new HashSet<>(connectionManager.connections.keySet());
                     for (String id : ids) {
                         if (ejectingCount > 0) {
@@ -180,8 +168,6 @@ public class NacosRuntimeConnectionEjector extends RuntimeConnectionEjector {
                         }
                     }
                 }
-                Loggers.CONNECTION.info("Connection overLimit task end, current loadCount={}, has ejected loadCont={}",
-                        connectionManager.getCurrentConnectionCount(), getLoadClient() - ejectingCount);
             } catch (Throwable e) {
                 Loggers.CONNECTION.error("Error occurs during connection overLimit... ", e);
             }

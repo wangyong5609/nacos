@@ -359,7 +359,7 @@ public class ConnectionMeta {
     }
     
     /**
-     * check block greater than the specific time.
+     * 检查阻塞是否大于特定时间。
      * @param timeMillsSeconds check times.
      * @return
      */

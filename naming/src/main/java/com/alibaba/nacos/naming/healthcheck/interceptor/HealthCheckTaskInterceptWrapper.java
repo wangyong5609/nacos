@@ -21,7 +21,7 @@ import com.alibaba.nacos.naming.interceptor.NacosNamingInterceptorChain;
 import com.alibaba.nacos.naming.misc.Loggers;
 
 /**
- * Health check task intercept wrapper.
+ * 健康检查任务拦截包装器。
  *
  * @author xiweng.yy
  */

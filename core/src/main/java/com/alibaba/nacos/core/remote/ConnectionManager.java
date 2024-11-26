@@ -60,8 +60,10 @@ public class ConnectionManager {
     
     private Map<String, AtomicInteger> connectionForClientIp = new ConcurrentHashMap<>(16);
     
+    // 客户端连接
     Map<String, Connection> connections = new ConcurrentHashMap<>();
     
+    // 在运行时监控和处理连接的有效性,剔除连接，重连等
     private RuntimeConnectionEjector runtimeConnectionEjector;
     
     private ClientConnectionEventListenerRegistry clientConnectionEventListenerRegistry;
@@ -106,15 +108,18 @@ public class ConnectionManager {
             if (connections.containsKey(connectionId)) {
                 return true;
             }
+            // 检查连接是否超限
             if (checkLimit(connection)) {
                 return false;
             }
             if (traced(clientIp)) {
                 connection.setTraced(true);
             }
+            // 注册连接
             connections.put(connectionId, connection);
+            // 记录客户端连接数
             connectionForClientIp.computeIfAbsent(clientIp, k -> new AtomicInteger(0)).getAndIncrement();
-            
+            // 通知所有注册的事件监听器，表明一个新的连接已成功注册
             clientConnectionEventListenerRegistry.notifyClientConnected(connection);
             
             LOGGER.info("new connection registered successfully, connectionId = {},connection={} ", connectionId,
@@ -145,6 +150,7 @@ public class ConnectionManager {
      * @param connectionId connectionId.
      */
     public synchronized void unregister(String connectionId) {
+        // 移除连接
         Connection remove = this.connections.remove(connectionId);
         if (remove != null) {
             String clientIp = remove.getMetaInfo().clientIp;
@@ -157,6 +163,7 @@ public class ConnectionManager {
             }
             remove.close();
             LOGGER.info("[{}]Connection unregistered successfully. ", connectionId);
+            // 通知订阅者连接已断开，同步给集群其他节点
             clientConnectionEventListenerRegistry.notifyClientDisConnected(remove);
         }
     }
@@ -239,13 +246,13 @@ public class ConnectionManager {
     }
     
     /**
-     * Start Task：Expel the connection which active Time expire.
+     * 启动任务：清除活动时间到期的连接。
      */
     @PostConstruct
     public void start() {
-        
+        // 初始化连接剔除器
         initConnectionEjector();
-        // Start UnHealthy Connection Expel Task.
+        // 启动不健康连接排除任务。间隔时间：3 秒
         RpcScheduledExecutor.COMMON_SERVER_EXECUTOR.scheduleWithFixedDelay(() -> {
             runtimeConnectionEjector.doEject();
             MetricsMonitor.getLongConnectionMonitor().set(connections.size());

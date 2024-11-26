@@ -379,7 +379,7 @@ public class InstanceController {
     }
     
     /**
-     * Create a beat for instance.
+     * 为实例创建心跳
      *
      * @param request http request
      * @return detail information of instance
@@ -393,6 +393,7 @@ public class InstanceController {
     public ObjectNode beat(HttpServletRequest request) throws Exception {
         
         ObjectNode result = JacksonUtils.createEmptyJsonNode();
+        // 心跳间隔：5秒
         result.put(SwitchEntry.CLIENT_BEAT_INTERVAL, switchDomain.getClientBeatInterval());
         
         String beat = WebUtils.optional(request, "beat", StringUtils.EMPTY);
@@ -419,6 +420,7 @@ public class InstanceController {
         NamingUtils.checkServiceNameFormat(serviceName);
         Loggers.SRV_LOG.debug("[CLIENT-BEAT] full arguments: beat: {}, serviceName: {}, namespaceId: {}", clientBeat,
                 serviceName, namespaceId);
+        // 创建 BeatInfoInstanceBuilder 对象
         BeatInfoInstanceBuilder builder = BeatInfoInstanceBuilder.newBuilder();
         builder.setRequest(request);
         int resultCode = getInstanceOperator().handleBeat(namespaceId, serviceName, ip, port, clusterName, clientBeat,
