@@ -96,12 +96,15 @@ public class HealthCheckCommonV2 {
                 return;
             }
             try {
+                // 如果实例被标记为不健康，现在健康了，则修改健康状态并通知集群其他节点
                 if (!instance.isHealthy()) {
                     String serviceName = service.getGroupedServiceName();
                     String clusterName = instance.getCluster();
+                    // 检查服务实例的健康状态是否达到了指定的阈值
                     if (instance.getOkCount().incrementAndGet() >= switchDomain.getCheckTimes()) {
                         if (switchDomain.isHealthCheckEnabled(serviceName) && !task.isCancelled() && distroMapper
                                 .responsible(task.getClient().getResponsibleId())) {
+                            // 修改实例的健康状态
                             healthStatusSynchronizer.instanceHealthStatusChange(true, task.getClient(), service, instance);
                             Loggers.EVT_LOG.info("serviceName: {} {POS} {IP-ENABLED} valid: {}:{}@{}, region: {}, msg: {}",
                                     serviceName, instance.getIp(), instance.getPort(), clusterName,

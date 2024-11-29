@@ -107,6 +107,7 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
                     .reEvaluateCheckRT(task.getCheckRtNormalized() * 2, task, switchDomain.getTcpHealthParams());
             return;
         }
+        // 向taskQueue中添加一个心跳对象
         taskQueue.add(new Beat(task, service, metadata, instance));
         MetricsMonitor.getTcpHealthCheckMonitor().incrementAndGet();
     }
@@ -137,17 +138,18 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
         while (true) {
             try {
                 processTask();
-                
+                // 检查是否有任何通道（如 SocketChannel）准备好进行 I/O 操作
                 int readyCount = selector.selectNow();
                 if (readyCount <= 0) {
                     continue;
                 }
-                
+                // 获取所有已准备好的 SelectionKey 对象，并创建一个迭代器
                 Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
                 while (iter.hasNext()) {
                     SelectionKey key = iter.next();
+                    // 从 selectedKeys 集合中移除当前键。这是必要的，因为一旦处理完毕，就不再需要该键，以避免重复处理
                     iter.remove();
-                    
+                    // 将处理逻辑提交给全局执行器，使用 PostProcessor 处理每个连接的状态变化
                     GlobalExecutor.executeTcpSuperSense(new PostProcessor(key));
                 }
             } catch (Throwable e) {
@@ -166,18 +168,21 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
         
         @Override
         public void run() {
+            // 从选择键中获取与之关联的 Beat 对象，用于检查心跳状态
             Beat beat = (Beat) key.attachment();
+            //  获取与选择键关联的 SocketChannel，用于进行网络操作。
             SocketChannel channel = (SocketChannel) key.channel();
             try {
+                // 如果 beat 对象被标记为不健康，取消选择键并关闭通道，同时调用 finishCheck() 方法标记检查完成
                 if (!beat.isHealthy()) {
-                    //invalid beat means this server is no longer responsible for the current service
+                    // 无效beat表示该服务器不再负责当前的服务
                     key.cancel();
                     key.channel().close();
                     
                     beat.finishCheck();
                     return;
                 }
-                
+                // 如果选择键有效且可以连接，调用 finishConnect() 方法完成连接，并记录健康检查结果
                 if (key.isValid() && key.isConnectable()) {
                     //connected
                     channel.finishConnect();
@@ -318,6 +323,7 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
         }
     }
     
+    // 连接超时任务
     private static class TimeOutTask implements Runnable {
         
         SelectionKey key;
@@ -331,17 +337,19 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
             if (key != null && key.isValid()) {
                 SocketChannel channel = (SocketChannel) key.channel();
                 Beat beat = (Beat) key.attachment();
-                
+                // 如果网络已连接，则直接返回
                 if (channel.isConnected()) {
                     return;
                 }
                 
                 try {
+                    // 超时关闭连接
                     channel.finishConnect();
                 } catch (Exception ignore) {
                 }
                 
                 try {
+                    // 完成健康检查，设置为失败
                     beat.finishCheck(false, false, beat.getTask().getCheckRtNormalized() * 2, "tcp:timeout");
                     key.cancel();
                     key.channel().close();
@@ -364,25 +372,31 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
         @Override
         public Void call() {
             long waited = System.currentTimeMillis() - beat.getStartTime();
+            // 如果等待时间超过500ms，则打印警告日志
             if (waited > MAX_WAIT_TIME_MILLISECONDS) {
                 Loggers.SRV_LOG.warn("beat task waited too long: " + waited + "ms");
             }
             
             SocketChannel channel = null;
             try {
+                // 服务实例信息
                 HealthCheckInstancePublishInfo instance = beat.getInstance();
                 
+                // 从 keyMap 中获取与 beat 关联的 BeatKey
                 BeatKey beatKey = keyMap.get(beat.toString());
+                // 如果 beatKey 不为空且 key 有效，则直接返回
                 if (beatKey != null && beatKey.key.isValid()) {
+                    // 如果键有效且最近的活动时间小于 TCP_KEEP_ALIVE_MILLIS，则表示连接仍然有效，调用 instance.finishCheck() 并返回
                     if (System.currentTimeMillis() - beatKey.birthTime < TCP_KEEP_ALIVE_MILLIS) {
                         instance.finishCheck();
                         return null;
                     }
-                    
+                    // 如果连接不再有效，取消 SelectionKey 并关闭相关的 SocketChannel
                     beatKey.key.cancel();
                     beatKey.key.channel().close();
                 }
-                
+                // 打开通道: 创建一个新的 SocketChannel 实例。
+                // 非阻塞模式: 将通道设置为非阻塞模式，以允许异步 I/O 操作
                 channel = SocketChannel.open();
                 channel.configureBlocking(false);
                 // only by setting this can we make the socket close event asynchronous
@@ -391,19 +405,26 @@ public class TcpHealthCheckProcessor implements HealthCheckProcessorV2, Runnable
                 channel.socket().setKeepAlive(true);
                 channel.socket().setTcpNoDelay(true);
                 
+                // 获取元数据
                 ClusterMetadata cluster = beat.getMetadata();
                 int port = cluster.isUseInstancePortForCheck() ? instance.getPort() : cluster.getHealthyCheckPort();
+                // 使用 connect 方法尝试连接到指定的 IP 和端口
                 channel.connect(new InetSocketAddress(instance.getIp(), port));
                 
+                // 注册通道: 将 SocketChannel 注册到 Selector，并设置操作类型为连接和读取。
                 SelectionKey key = channel.register(selector, SelectionKey.OP_CONNECT | SelectionKey.OP_READ);
+                // 关联 beat: 将 beat 对象附加到选择键上，以便后续处理。
                 key.attach(beat);
+                // 更新键映射: 将新的 BeatKey 存储到 keyMap 中，以便后续查找。
                 keyMap.put(beat.toString(), new BeatKey(key));
                 
+                // 设置开始时间: 设置 beat 的开始时间为当前时间戳。
                 beat.setStartTime(System.currentTimeMillis());
-                
+                // 调度超时任务: 使用全局执行器调度一个超时任务，以处理连接超时的情况
                 GlobalExecutor
                         .scheduleTcpSuperSenseTask(new TimeOutTask(key), CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             } catch (Exception e) {
+                // 如果出现异常，设置健康检查失败，并关闭通道
                 beat.finishCheck(false, false, switchDomain.getTcpHealthParams().getMax(),
                         "tcp:error:" + e.getMessage());
                 

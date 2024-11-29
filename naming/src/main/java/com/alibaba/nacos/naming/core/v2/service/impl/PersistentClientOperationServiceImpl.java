@@ -133,19 +133,23 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP im
      */
     public void updateInstance(Service service, Instance instance, String clientId) {
         Service singleton = ServiceManager.getInstance().getSingleton(service);
+        // 如果是临时实例，抛出异常
         if (singleton.isEphemeral()) {
             throw new NacosRuntimeException(NacosException.INVALID_PARAM,
                     String.format("Current service %s is ephemeral service, can't update persistent instance.",
                             singleton.getGroupedServiceName()));
         }
+        // 构建请求
         final PersistentClientOperationServiceImpl.InstanceStoreRequest request = new PersistentClientOperationServiceImpl.InstanceStoreRequest();
         request.setService(service);
         request.setInstance(instance);
         request.setClientId(clientId);
+        // 创建写请求，序列化请求数据，设置操作类型为CHANGE
         final WriteRequest writeRequest = WriteRequest.newBuilder().setGroup(group())
                 .setData(ByteString.copyFrom(serializer.serialize(request))).setOperation(DataOperation.CHANGE.name())
                 .build();
         try {
+            // CPProtocol 写入,通知集群节点
             protocol.write(writeRequest);
         } catch (Exception e) {
             throw new NacosRuntimeException(NacosException.SERVER_ERROR, e);
@@ -234,6 +238,7 @@ public class PersistentClientOperationServiceImpl extends RequestProcessor4CP im
     private void onInstanceRegister(Service service, Instance instance, String clientId) {
         Service singleton = ServiceManager.getInstance().getSingleton(service);
         if (!clientManager.contains(clientId)) {
+            // 初次注册注册该客户端，初始化客户端信息，创建健康检查任务
             clientManager.clientConnected(clientId, new ClientAttributes());
         }
         Client client = clientManager.getClient(clientId);

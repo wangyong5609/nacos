@@ -53,8 +53,11 @@ public class HealthCheckProcessorV2Delegate implements HealthCheckProcessorV2 {
     
     @Override
     public void process(HealthCheckTaskV2 task, Service service, ClusterMetadata metadata) {
+        // tcp health check
         String type = metadata.getHealthyCheckType();
+        // 有四种类型的处理器，分别是：tcp、http、mysql、none
         HealthCheckProcessorV2 processor = healthCheckProcessorMap.get(type);
+        // 默认处理器是none
         if (processor == null) {
             processor = healthCheckProcessorMap.get(NoneHealthCheckProcessor.TYPE);
         }

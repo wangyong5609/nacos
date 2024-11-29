@@ -109,11 +109,16 @@ public class HealthCheckTaskV2 extends AbstractExecuteTask implements NacosHealt
     @Override
     public void doHealthCheck() {
         try {
+            // 初始化 bean 和其他参数
             initIfNecessary();
             for (Service each : client.getAllPublishedService()) {
+                // 是否开启健康检查，因为有些服务不需要健康检查
                 if (switchDomain.isHealthCheckEnabled(each.getGroupedServiceName())) {
+                    // 获取实例发布信息
                     InstancePublishInfo instancePublishInfo = client.getInstancePublishInfo(each);
+                    // 获取集群元数据
                     ClusterMetadata metadata = getClusterMetadata(each, instancePublishInfo);
+                    // 调用健康检查处理器
                     ApplicationUtils.getBean(HealthCheckProcessorV2Delegate.class).process(this, each, metadata);
                     if (Loggers.EVT_LOG.isDebugEnabled()) {
                         Loggers.EVT_LOG.debug("[HEALTH-CHECK] schedule health check task: {}", client.getClientId());
