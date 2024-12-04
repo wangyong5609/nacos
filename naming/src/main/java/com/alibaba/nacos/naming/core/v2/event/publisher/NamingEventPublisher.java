@@ -112,7 +112,9 @@ public class NamingEventPublisher extends Thread implements ShardedEventPublishe
         if (Loggers.EVT_LOG.isDebugEnabled()) {
             Loggers.EVT_LOG.debug("[NotifyCenter] the {} will received by {}", event, subscriber);
         }
+        // 调用订阅者事件回调方法
         final Runnable job = () -> subscriber.onEvent(event);
+        // 如果订阅者有自己的线程池，使用线程池执行，否则立即执行
         final Executor executor = subscriber.executor();
         if (executor != null) {
             executor.execute(job);
@@ -170,6 +172,7 @@ public class NamingEventPublisher extends Thread implements ShardedEventPublishe
     
     private void handleEvent(Event event) {
         Class<? extends Event> eventType = event.getClass();
+        // 事件的全部订阅者
         Set<Subscriber<? extends Event>> subscribers = subscribes.get(eventType);
         if (null == subscribers) {
             if (Loggers.EVT_LOG.isDebugEnabled()) {

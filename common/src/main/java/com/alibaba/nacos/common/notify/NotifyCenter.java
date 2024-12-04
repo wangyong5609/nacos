@@ -170,8 +170,8 @@ public class NotifyCenter {
      * @param factory  publisher factory.
      */
     public static void registerSubscriber(final Subscriber consumer, final EventPublisherFactory factory) {
-        // If you want to listen to multiple events, you do it separately,
-        // based on subclass's subscribeTypes method return list, it can register to publisher.
+        // 如果你想监听多个事件，你可以单独进行，
+        // 根据子类的 subscribeTypes 方法返回列表，它可以注册到发布者。
         if (consumer instanceof SmartSubscriber) {
             for (Class<? extends Event> subscribeType : ((SmartSubscriber) consumer).subscribeTypes()) {
                 // For case, producer: defaultSharePublisher -> consumer: smartSubscriber.
