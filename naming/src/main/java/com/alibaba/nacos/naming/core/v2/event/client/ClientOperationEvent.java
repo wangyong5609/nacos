@@ -47,7 +47,7 @@ public class ClientOperationEvent extends Event {
     }
     
     /**
-     * Client register service event.
+     * 客户端注册服务事件.
      */
     public static class ClientRegisterServiceEvent extends ClientOperationEvent {
         
@@ -83,7 +83,7 @@ public class ClientOperationEvent extends Event {
     }
     
     /**
-     * Client unsubscribe service event.
+     * 客户端取消订阅服务事件.
      */
     public static class ClientUnsubscribeServiceEvent extends ClientOperationEvent {
         

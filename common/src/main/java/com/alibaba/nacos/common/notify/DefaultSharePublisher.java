@@ -26,7 +26,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * The default share event publisher implementation for slow event.
+ * 慢速事件的默认共享事件发布者实现。
  *
  * @author zongtanghu
  */
@@ -38,9 +38,9 @@ public class DefaultSharePublisher extends DefaultPublisher implements ShardedEv
     
     @Override
     public void addSubscriber(Subscriber subscriber, Class<? extends Event> subscribeType) {
-        // Actually, do a classification based on the slowEvent type.
+        // 其实就是根据slowEvent类型做一个分类。
         Class<? extends SlowEvent> subSlowEventType = (Class<? extends SlowEvent>) subscribeType;
-        // For stop waiting subscriber, see {@link DefaultPublisher#openEventHandler}.
+        // 有关停止等待订阅者的信息，请参阅 {@link Default Publisher#openEventHandler}。
         subscribers.add(subscriber);
         
         lock.lock();

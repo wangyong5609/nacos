@@ -45,7 +45,7 @@ public abstract class Subscriber<T extends Event> {
     public abstract Class<? extends Event> subscribeType();
     
     /**
-     * It is up to the listener to determine whether the callback is asynchronous or synchronous.
+     * 由侦听器确定回调是异步还是同步。
      *
      * @return {@link Executor}
      */
@@ -64,8 +64,8 @@ public abstract class Subscriber<T extends Event> {
     }
     
     /**
-     * Whether the event's scope matches current subscriber. Default implementation is all scopes matched.
-     * If you override this method, it better to override related {@link com.alibaba.nacos.common.notify.Event#scope()}.
+     * 事件的范围是否与当前订阅者匹配。默认实现是所有范围都匹配。
+     * 如果重写此方法，最好重写相关的{@link com.alibaba.nacos.common.notify.Event#scope()}。
      *
      * @param event {@link Event}
      * @return Whether the event's scope matches current subscriber

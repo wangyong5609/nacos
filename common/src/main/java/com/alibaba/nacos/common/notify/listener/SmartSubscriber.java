@@ -32,7 +32,7 @@ public abstract class SmartSubscriber extends Subscriber<Event> {
     
     /**
      * Returns which event type are smart subscriber interested in.
-     * 订阅者感兴趣的事件类型列表
+     * 订阅者订阅的的事件类型列表
      *
      * @return The interested event types.
      */

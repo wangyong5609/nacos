@@ -67,12 +67,12 @@ public class NotifyCenter {
     private final Map<String, EventPublisher> publisherMap = new ConcurrentHashMap<>(16);
     
     static {
-        // Internal ArrayBlockingQueue buffer size. For applications with high write throughput,
-        // this value needs to be increased appropriately. default value is 16384
+        // 内部 ArrayBlockingQueue 缓冲区大小。对于具有高写入吞吐量的应用程序，
+        // 这个值需要适当增大。默认值为 16384
         String ringBufferSizeProperty = "nacos.core.notify.ring-buffer-size";
         ringBufferSize = Integer.getInteger(ringBufferSizeProperty, 16384);
         
-        // The size of the public publisher's message staging queue buffer
+        // 公共发布者的消息暂存队列缓冲区的大小
         String shareBufferSizeProperty = "nacos.core.notify.share-buffer-size";
         shareBufferSize = Integer.getInteger(shareBufferSizeProperty, 1024);
         
@@ -153,8 +153,8 @@ public class NotifyCenter {
     }
     
     /**
-     * Register a Subscriber. If the Publisher concerned by the Subscriber does not exist, then PublihserMap will
-     * preempt a placeholder Publisher with default EventPublisherFactory first.
+     * 注册订阅者。如果订阅者关注的发布者不存在，那么PublihserMap将
+     * 首先使用默认的 EventPublisherFactory 抢占占位符 Publisher。
      *
      * @param consumer subscriber
      */
@@ -319,7 +319,7 @@ public class NotifyCenter {
     }
     
     /**
-     * Register publisher with default factory.
+     * 使用默认工厂注册发布者。
      *
      * @param eventType    class Instances type of the event type.
      * @param queueMaxSize the publisher's queue max size.
